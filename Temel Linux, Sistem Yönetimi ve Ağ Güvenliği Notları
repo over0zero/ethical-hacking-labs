@@ -1,0 +1,100 @@
+# Temel Linux, Sistem Yönetimi ve Ağ Güvenliği Notları
+
+Bu dokümantasyon; Kali Linux dosya hiyerarşisi, kullanıcı yetki mimarisi, metin düzenleyiciler ve ağ araçlarının kullanımını kapsamaktadır.
+
+---
+
+## 1. Kullanıcı Yetkileri ve Mimari Farklar
+
+### `root` ve `kali` Kullanıcısı Farkı
+* **`kali` (Standart Kullanıcı):** Sistemin varsayılan kullanıcısıdır. Yalnızca kendi ev dizininde (`/home/kali`) sınırsız yetkiye sahiptir. Sistem dosyalarını değiştiremez, donanım seviyesinde kritik işlemleri (ağ arayüzü modu değişimi, paket enjeksiyonu) doğrudan yapamaz.
+* **`root` (Süper Kullanıcı / Yönetici):** Linux sistemindeki mutlak yetkili hesaptır. Tüm sistem dosyalarını (`/etc`, `/bin` vb.) okuyabilir, yazabilir ve silebilir. Sistemde `UID: 0` değerine sahiptir.
+
+### Yetki Yönetimi Komutları
+* **`sudo <komut>`:** *(Superuser Do)* Standart kullanıcının tek bir komutu geçici olarak yönetici yetkisiyle çalıştırmasını sağlar.
+* **`sudo -i` / `sudo su`:** Kalıcı olarak root kabuğuna geçer. Komut satırındaki `$` işareti `#` olur. Tekrar standart kullanıcıya dönmek için `exit` kullanılır.
+* **`passwd`:** Mevcut kullanıcının şifresini değiştirmek için kullanılır. `sudo passwd` şeklinde girilirse doğrudan `root` kullanıcısının şifresi güncellenir.
+
+---
+
+## 2. Linux Klasör Hiyerarşisi (Filesystem Hierarchy)
+
+Linux'ta Windows'taki gibi `C:\` veya `D:\` sürücü harfleri bulunmaz. Her şey en tepedeki kök dizin olan `/` (root) altından dallanır:
+
+* **`/` (Root):** Bütün dosya sisteminin başlangıç noktasıdır.
+* **`/home`:** Kullanıcıların kişisel çalışma alanlarını barındırır (Örn: `/home/kali`). Masaüstü, İndirilenler ve Belgeler buradadır.
+* **`/root`:** `root` kullanıcısının kişisel ev dizinidir.
+* **`/etc`:** Sistemin ve kurulu programların yapılandırma (ayar/config) dosyalarını tutar (Örn: `/etc/network/interfaces`, `/etc/resolv.conf`).
+* **`/bin` & `/sbin`:** Sistemin çalışması için gerekli temel ikili (çalıştırılabilir) program komutları yer alır (`ls`, `cp`, `airmon-ng` gibi).
+* **`/var`:** Sürekli değişen değişken verileri barındırır; özellikle siber güvenlik testlerinde analiz edilen sistem logları `/var/log` altında tutulur.
+* **`/tmp`:** Geçici dosyaların saklandığı alandır; sistem yeniden başlatıldığında genellikle temizlenir.
+* **`/media` & `/mnt`:** USB bellekler, harici diskler ve paylaşılan klasörlerin bağlandığı (mount edildiği) dizinlerdir.
+
+---
+
+## 3. Dosya ve Dizin Yönetimi Komutları
+
+* **`pwd`:** *(Print Working Directory)* Şu an bulunulan dizinin tam yolunu ekrana yazar.
+* **`ls`:** Dizin içerisindeki dosya ve klasörleri listeler.
+* **`ls -la`:** Gizli dosyalar (`.` ile başlayanlar) dahil olmak üzere tüm dosyaları izinler, sahiplik, dosya boyutu ve değiştirilme tarihiyle birlikte detaylı listeler.
+* **`cd <hedef>`:** *(Change Directory)* Dizin değiştirir.
+  * `cd Desktop` -> Desktop dizinine gider.
+  * `cd ..` -> Bir üst klasöre çıkar.
+  * `cd ~` veya sadece `cd` -> Kullanıcının ev dizinine (`/home/kali`) döner.
+* **`mkdir <klasor_adi>`:** *(Make Directory)* Yeni bir dizin (klasör) oluşturur.
+  * `mkdir -p lab/test` -> İç içe klasörleri tek seferde oluşturur.
+* **`touch <dosya_adi>`:** Boş bir dosya oluşturur veya var olan bir dosyanın erişim/değiştirilme zaman damgasını günceller.
+* **`cp <kaynak> <hedef>`:** *(Copy)* Dosya kopyalar.
+  * Klasör kopyalamak için özyinelemeli (recursive) bayrak gerekir: `cp -r <kaynak_klasor> <hedef_klasor>`.
+* **`rm <dosya>`:** *(Remove)* Dosya siler.
+  * Klasör ve içeriğini zorla silmek için: `rm -rf <klasor_adi>`.
+* **`mv <kaynak> <hedef>`:** *(Move)* Dosyayı başka bir konuma taşır veya dosya/klasör adını yeniden adlandırır.
+* **`cat <dosya>`:** *(Concatenate)* Dosyanın içeriğini açmadan doğrudan terminal ekranına yazdırır.
+* **`head` / `tail`:** Dosyanın ilk veya son 10 satırını gösterir. Örneğin son logları görmek için: `tail -n 20 /var/log/syslog`.
+* **`grep <kelime> <dosya>`:** Dosya veya komut çıktısı içinde belirli bir deseni/metni arar ve filtreler.
+
+---
+
+## 4. Paket Yönetimi (APT)
+
+Debian ve Kali tabanlı sistemlerde yazılım yükleme, güncelleme ve kaldırma aracıdır:
+
+* **`sudo apt update`:** Kurulu paketlerin en son sürüm listesini depolardan (repository) çeker. Sistemi güncellemez; sadece nelerin güncellenebileceğinin fihristini yeniler.
+* **`sudo apt upgrade`:** `update` ile tespit edilen eski paketleri en yeni sürümlerine yükseltir.
+* **`sudo apt install <paket_adi>`:** Belirtilen aracı veya programı sisteme indirip kurar.
+* **`sudo apt remove <paket_adi>`:** Belirtilen programı sistemden kaldırır.
+
+---
+
+## 5. Nano Metin Editörü (Detaylı Kılavuz)
+
+**Nano**, Linux terminalinde çalışan basit, hızlı ve kullanıcı dostu bir metin düzenleyicidir. Grafik arayüze ihtiyaç duymadan terminal içinden kod, not veya sistem yapılandırma dosyalarını düzenlemek için kullanılır.
+
+### Dosya Açma / Oluşturma
+```bash
+nano dosya_adi.txt
+```
+*(Eğer sistem dosyası düzenlenecekse yönetici yetkisiyle açılmalıdır: `sudo nano /etc/network/interfaces`)*
+
+### Temel Kısayollar ve Kullanım Mantığı
+Nano ekranında alt satırda görülen `^` işareti klavyedeki **`Ctrl`** tuşunu temsil eder:
+
+| Kısayol | Görevi | Açıklama |
+| :--- | :--- | :--- |
+| **`Ctrl + O`** | **WriteOut (Kaydet)** | Yapılan değişiklikleri diske yazar. Bastıktan sonra dosya adını onaylamak için `Enter`'a basılır. |
+| **`Ctrl + X`** | **Exit (Çıkış)** | Editörden çıkar. Kaydedilmemiş değişiklik varsa "Save modified buffer?" diye sorar; kaydetmek için `Y`, kaydetmeden çıkmak için `N` tuşlanır. |
+| **`Ctrl + W`** | **Where Is (Ara)** | Metin içinde kelime arar. Kelimeyi yazıp `Enter`'a basarak eşleşen konuma gidilir. |
+| **`Ctrl + K`** | **Cut (Satır Kes)** | İmlecin bulunduğu satırı tamamen keser. |
+| **`Ctrl + U`** | **Uncut (Yapıştır)** | Kesilen satırı imlecin olduğu yere yapıştırır. |
+| **`Ctrl + C`** | **Cur Pos** | İmlecin o an bulunduğu satır ve sütun numarasını altta gösterir. |
+
+---
+
+## 6. Ağ ve Donanım Teşhis Komutları
+
+* **`ifconfig`:** Sistemdeki ağ arayüzlerinin (`eth0`, `lo`, `wlan0`) IP adreslerini, ağ maskelerini ve veri aktarım istatistiklerini (RX/TX paketleri) gösterir.
+* **`iwconfig`:** Kablosuz ağ arayüzlerine özgü ayarları görüntüler. Bir kartın normal modda mı (`Mode:Managed`) yoksa dinleme modunda mı (`Mode:Monitor`) olduğunu doğrulamak için kullanılır.
+* **`ip link` / `ip addr`:** `ifconfig`'in modern alternatifidir. Kapalı arayüzleri dahi listeler ve IP durumlarını gösterir.
+* **`lsusb`:** USB veri yoluna bağlı donanımları (Wi-Fi adaptörleri, harici bellekler) denetler.
+* **`sudo rfkill unblock all`:** Kablosuz aygıtlar üzerindeki yazılımsal ve donanımsal kilitleri kaldırır.
+* **`ping <adres>`:** Hedef IP veya alan adına ICMP paketleri göndererek ağ erişimini ve gecikmeyi test eder.
